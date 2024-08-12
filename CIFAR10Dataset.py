@@ -49,7 +49,7 @@ def get_dataset(batch_size=64, root=''):
     ])
 
     held_out = datasets.CIFAR10(root=root, train=False, download=True, transform=transform_val_test)
-    test_set, val_set = torch.utils.data.random_split(held_out, [5000, 5000], generator=torch.Generator().manual_seed(42))
+    test_set, val_set = torch.utils.data.random_split(held_out, [0.5, 0.5], generator=torch.Generator().manual_seed(42))
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=2)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=2)
 
