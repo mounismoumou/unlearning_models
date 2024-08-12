@@ -18,12 +18,6 @@ class CIFAR10Dataset(data.Dataset):
 
         if split == 'train':
             self.dataset = datasets.CIFAR10(root=root, train=True, download=True, transform=self.transform)
-        elif split == 'val':
-            self.dataset = datasets.CIFAR10(root=root, train=True, download=True, transform=self.transform)
-            self.dataset.data = self.dataset.data[40000:]  # Last 10,000 as validation
-            self.dataset.targets = self.dataset.targets[40000:]
-        elif split == 'test':
-            self.dataset = datasets.CIFAR10(root=root, train=False, download=True, transform=self.transform)
         else:
             raise ValueError('Unknown split {}'.format(split))
 
@@ -39,48 +33,61 @@ def get_dataset(batch_size=64, root=''):
     """Get the CIFAR-10 dataset."""
     
     transform = T.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
         T.ToTensor(),
         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
     train_ds = CIFAR10Dataset(root=root, split='train', transform=transform)
-    val_ds = CIFAR10Dataset(root=root, split='val', transform=transform)
-    test_ds = CIFAR10Dataset(root=root, split='test', transform=transform)
 
-    # Get all person id from the training dataset.
-    ids = np.array([int(t['label']) for t in train_ds])
-    # Create a split that respects the label
-    x = np.arange(len(ids)).reshape((-1, 1))
+    transform_val_test = T.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        T.ToTensor(),
+        T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
 
-    # Split into retain and forget sets, ensuring separation of labels.
-    sklearn.utils.check_random_state(0)
-    lpgo = model_selection.LeavePGroupsOut(n_groups=2)
-    retain_index, forget_index = next(lpgo.split(x, None, ids))
-    retain_ds = data.Subset(train_ds, retain_index)
-    forget_ds = data.Subset(train_ds, forget_index)
+    held_out = datasets.CIFAR10(root=root, train=False, download=True, transform=transform_val_test)
+    test_set, val_set = torch.utils.data.random_split(held_out, [5000, 5000], generator=torch.Generator().manual_seed(42))
+    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=2)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=2)
 
-    if len(set(retain_ds.indices).intersection(set(forget_ds.indices))) > 0:
-        raise AssertionError("Overlap in retain and forget sets")
+    # Download the forget and retain index split
+    local_path = "forget_idx.npy"
+    if not os.path.exists(local_path):
+        response = requests.get(
+            "https://storage.googleapis.com/unlearning-challenge/" + local_path
+        )
+        open(local_path, "wb").write(response.content)
+    forget_idx = np.load(local_path)
 
-    train_loader = data.DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    val_loader = data.DataLoader(val_ds, batch_size=batch_size, shuffle=False)
-    test_loader = data.DataLoader(test_ds, batch_size=batch_size, shuffle=False)
-    retain_loader = data.DataLoader(retain_ds, batch_size=batch_size, shuffle=True)
-    forget_loader = data.DataLoader(forget_ds, batch_size=batch_size, shuffle=True)
-    forget_loader_no_shuffle = data.DataLoader(forget_ds, batch_size=batch_size, shuffle=False)
+    # Construct indices of retain from those of the forget set
+    forget_mask = np.zeros(len(train_ds.dataset.targets), dtype=bool)
+    forget_mask[forget_idx] = True
+    retain_idx = np.arange(forget_mask.size)[~forget_mask]
+
+    # Split train set into a forget and a retain set
+    forget_set = torch.utils.data.Subset(train_ds, forget_idx)
+    retain_set = torch.utils.data.Subset(train_ds, retain_idx)
+
+    forget_loader = torch.utils.data.DataLoader(
+        forget_set, batch_size=batch_size, shuffle=True, num_workers=2
+    )
+    retain_loader = torch.utils.data.DataLoader(
+        retain_set, batch_size=batch_size, shuffle=True, num_workers=2, generator=torch.Generator().manual_seed(42)
+    )
 
     # Compute class weights
-    class_counts = np.bincount([t['label'] for t in train_ds])
+    class_counts = np.bincount(train_ds.dataset.targets)
     class_weights = [1.0 / count if count > 0 else 1.0 for count in class_counts]
     class_weights_tensor = torch.FloatTensor(class_weights)
 
     return (
-        train_loader,
-        val_loader,
-        test_loader,
         retain_loader,
         forget_loader,
-        forget_loader_no_shuffle,
+        val_loader,
+        test_loader,
         class_weights_tensor,
     )
 
