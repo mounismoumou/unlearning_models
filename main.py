@@ -25,9 +25,9 @@ import numpy as np
 import torch
 from torch import nn
 from torch import optim
-from unlearning_models import metric
-from unlearning_models import CIFAR10
-from unlearning_models import train_lib
+import metric
+import CIFAR10
+import train_lib
 
 _DATA_DIR = flags.DEFINE_string(
     'data_dir',
@@ -266,7 +266,7 @@ def main(unused_args):
       forget_loader_no_shuffle,
       class_weights,
   ) = CIFAR10.get_dataset(
-      batch_size=64, quiet=False, dataset_path=_DATA_DIR.value
+      batch_size=64, dataset_path=_DATA_DIR.value
   )
 
   (

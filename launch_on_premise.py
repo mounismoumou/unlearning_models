@@ -1,23 +1,24 @@
 from absl import app
 from absl import flags
 import os
+import subprocess
 
 _EXP_NAME = flags.DEFINE_string(
     'exp_name', 'unlearning-metric', 'Name of the experiment.', short_name='n'
 )
 _DATA_DIR = flags.DEFINE_string(
     'data_dir',
-    './data/',
+    'data/',
     'Directory containing the data.',
 )
 _CHECKPOINT_DIR = flags.DEFINE_string(
     'checkpoint_dir',
-    './checkpoints/',
+    'checkpoints/',
     'Directory containing the checkpoints.',
 )
 _OUTPUT_DIR = flags.DEFINE_string(
     'output_dir',
-    './outputs/',
+    'outputs/',
     'Directory to write the outputs.',
 )
 
@@ -32,14 +33,14 @@ def main(argv) -> None:
     os.makedirs(_OUTPUT_DIR.value, exist_ok=True)
 
     # Define the executable arguments
-    executable_args = {
-        'data_dir': _DATA_DIR.value,
-        'checkpoint_dir': _CHECKPOINT_DIR.value,
-        'output_dir': _OUTPUT_DIR.value,
-    }
+    executable_args = [
+        f"--data_dir={_DATA_DIR.value}",
+        f"--checkpoint_dir={_CHECKPOINT_DIR.value}",
+        f"--output_dir={_OUTPUT_DIR.value}",
+    ]
 
-    import unlearning_models
-    unlearning_models.main(executable_args)
+    # Run the main.py script with the provided arguments
+    subprocess.run(["python3", "main.py"] + executable_args, check=True)
 
 
 if __name__ == '__main__':

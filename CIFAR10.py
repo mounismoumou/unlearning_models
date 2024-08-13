@@ -29,29 +29,30 @@ class CIFAR10Dataset(data.Dataset):
         return {'image': image, 'label': label}
 
 
-def get_dataset(batch_size=64, root=''):
+def get_dataset(batch_size=64, dataset_path=''):
     """Get the CIFAR-10 dataset."""
     
     transform = T.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
+        T.RandomCrop(32, padding=4),
+        T.RandomHorizontalFlip(),
         T.ToTensor(),
         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    train_ds = CIFAR10Dataset(root=root, split='train', transform=transform)
+    train_ds = CIFAR10Dataset(root=dataset_path, split='train', transform=transform)
+    train_loader = data.DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=2)
 
     transform_val_test = T.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
+        T.RandomCrop(32, padding=4),
+        T.RandomHorizontalFlip(),
         T.ToTensor(),
         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    held_out = datasets.CIFAR10(root=root, train=False, download=True, transform=transform_val_test)
+    held_out = datasets.CIFAR10(root=dataset_path, train=False, download=True, transform=transform_val_test)
     test_set, val_set = torch.utils.data.random_split(held_out, [0.5, 0.5], generator=torch.Generator().manual_seed(42))
-    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=2)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=2)
+    test_loader = data.DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=2)
+    val_loader = data.DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=2)
 
     # Download the forget and retain index split
     local_path = "forget_idx.npy"
@@ -74,6 +75,7 @@ def get_dataset(batch_size=64, root=''):
     forget_loader = torch.utils.data.DataLoader(
         forget_set, batch_size=batch_size, shuffle=True, num_workers=2
     )
+    forget_loader_no_shuffle = data.DataLoader(forget_set, batch_size=batch_size, shuffle=False, num_workers=2)
     retain_loader = torch.utils.data.DataLoader(
         retain_set, batch_size=batch_size, shuffle=True, num_workers=2, generator=torch.Generator().manual_seed(42)
     )
@@ -84,10 +86,12 @@ def get_dataset(batch_size=64, root=''):
     class_weights_tensor = torch.FloatTensor(class_weights)
 
     return (
-        retain_loader,
-        forget_loader,
+        train_loader,
         val_loader,
         test_loader,
+        retain_loader,
+        forget_loader,
+        forget_loader_no_shuffle,
         class_weights_tensor,
     )
 
