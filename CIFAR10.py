@@ -109,7 +109,7 @@ def compute_accuracy_cifar10(
     accs = {}
     pc_accs = {}
     list_of_classes = list(range(10))
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'mps'
 
     with torch.no_grad():
         for name, loader in zip(data_names_list, data_loader_list):

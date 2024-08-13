@@ -22,7 +22,7 @@ from torch import nn
 from torch import optim
 from torchvision import models
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda' if torch.cuda.is_available() else 'mps'
 
 
 def _initialize():
@@ -123,7 +123,7 @@ def _train(epoch, net, loader, optimizer, criterion, scheduler, quiet):
 
   for sample in loader:
     inputs = sample['image']
-    targets = sample['age_group']
+    targets = sample['label']
     inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
 
     optimizer.zero_grad()
@@ -182,7 +182,7 @@ def _test(
   with torch.no_grad():
     for sample in loader:
       inputs = sample['image']
-      targets = sample['age_group']
+      targets = sample['label']
       inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
 
       outputs = net(inputs)
