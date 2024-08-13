@@ -38,8 +38,8 @@ def main(argv) -> None:
         'output_dir': _OUTPUT_DIR.value,
     }
 
-    import unlearning_evaluation
-    unlearning_evaluation.main(executable_args)
+    import unlearning_models
+    unlearning_models.main(executable_args)
 
 
 if __name__ == '__main__':
