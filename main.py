@@ -85,7 +85,7 @@ def do_unlearning(
   for _ in range(epochs):
     for sample in retain_loader:
       inputs = sample['image']
-      targets = sample['age_group']
+      targets = sample['label']
       inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
 
       optimizer.zero_grad()
@@ -115,7 +115,7 @@ def _get_confs(net, loader):
   confs = []
   for sample in loader:
     inputs = sample['image']
-    targets = sample['age_group']
+    targets = sample['label']
     inputs = inputs.to(DEVICE)
     logits = net(inputs)
     logits = logits.detach().cpu().numpy()
