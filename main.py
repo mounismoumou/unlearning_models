@@ -26,24 +26,24 @@ import torch
 from torch import nn
 from torch import optim
 from unlearning_models import metric
-from unlearning_models import surf
+from unlearning_models import CIFAR10
 from unlearning_models import train_lib
 
 _DATA_DIR = flags.DEFINE_string(
     'data_dir',
-    'unlearning/SURF',
+    'data',
     'Path to the dataset.',
 )
 
 _CHECKPOINT_DIR = flags.DEFINE_string(
     'checkpoint_dir',
-    './checkpoints',
+    'checkpoints',
     'Path to the checkpoint directory.',
 )
 
 _OUTPUT_DIR = flags.DEFINE_string(
     'output_dir',
-    './outputs',
+    'outputs',
     'Path to the output directory.',
 )
 
@@ -53,7 +53,7 @@ _NUM_MODELS = flags.DEFINE_integer(
     'Number of models to train.',
 )
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda' if torch.cuda.is_available() else 'mps'
 
 # Info for training the original and retrained models:
 NUM_EPOCHS = 30
@@ -97,7 +97,7 @@ def do_unlearning(
 
     if print_accuracy:
       unlearned_model.eval()
-      surf.compute_accuracy_surf(
+      CIFAR10.compute_accuracy_cifar10(
           ['retain', 'forget', 'val'],
           [retain_loader, forget_loader, val_loader],
           unlearned_model,
@@ -165,7 +165,7 @@ def get_unlearned_and_retrained_confs_and_accs(
     confs_forget = _get_confs(net, forget_loader_no_shuffle)
     unlearned_confs_forget.append(confs_forget)
     # For this particular model, compute the retain and test accuracies.
-    accs = surf.compute_accuracy_surf(
+    accs = CIFAR10.compute_accuracy_cifar10(
         ['retain', 'forget', 'test'],
         [retain_loader, forget_loader, test_loader],
         net,
@@ -211,7 +211,7 @@ def get_unlearned_and_retrained_confs_and_accs(
       confs_forget = _get_confs(net, forget_loader_no_shuffle)
       retrained_confs_forget.append(confs_forget)
       # For this particular model, compute the retain and test accuracies.
-      accs = surf.compute_accuracy_surf(
+      accs = CIFAR10.compute_accuracy_cifar10(
           ['retain', 'forget', 'test'],
           [retain_loader, forget_loader, test_loader],
           net,
@@ -265,7 +265,7 @@ def main(unused_args):
       forget_loader,
       forget_loader_no_shuffle,
       class_weights,
-  ) = surf.get_dataset(
+  ) = CIFAR10.get_dataset(
       batch_size=64, quiet=False, dataset_path=_DATA_DIR.value
   )
 
