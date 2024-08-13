@@ -121,7 +121,9 @@ def _train(epoch, net, loader, optimizer, criterion, scheduler, quiet):
   correct_pc = [0 for _ in list_of_classes]
   total_pc = [0 for _ in list_of_classes]
 
-  for inputs, targets in loader:
+  for sample in loader:
+    inputs = sample['image']
+    targets = sample['label']
     inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
 
     optimizer.zero_grad()
@@ -178,7 +180,9 @@ def _test(
   correct_pc = [0 for c in list_of_classes]
   total_pc = [0 for c in list_of_classes]
   with torch.no_grad():
-    for inputs, targets in loader:
+    for sample in loader:
+      inputs = sample['image']
+      targets = sample['label']
       inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
 
       outputs = net(inputs)
