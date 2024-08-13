@@ -180,9 +180,7 @@ def _test(
   correct_pc = [0 for c in list_of_classes]
   total_pc = [0 for c in list_of_classes]
   with torch.no_grad():
-    for sample in loader:
-      inputs = sample['image']
-      targets = sample['label']
+    for inputs, targets in loader:
       inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
 
       outputs = net(inputs)
