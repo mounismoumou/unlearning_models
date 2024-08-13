@@ -25,9 +25,9 @@ import numpy as np
 import torch
 from torch import nn
 from torch import optim
-from unlearning_evaluation import metric
-from unlearning_evaluation import surf
-from unlearning_evaluation import train_lib
+from unlearning_models import metric
+from unlearning_models import surf
+from unlearning_models import train_lib
 
 _DATA_DIR = flags.DEFINE_string(
     'data_dir',
