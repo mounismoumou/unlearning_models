@@ -268,7 +268,7 @@ def main(unused_args):
   ) = CIFAR10.get_dataset(
       batch_size=64, dataset_path=_DATA_DIR.value
   )
-
+    
   (
       unlearned_confs_forget,
       retrained_confs_forget,
@@ -288,7 +288,7 @@ def main(unused_args):
       class_weights,
       retrained_confs_path,
   )
-
+  
   u_r_mean = np.mean(unlearned_retain_accs)
   u_t_mean = np.mean(unlearned_test_accs)
   u_f_mean = np.mean(unlearned_forget_accs)
