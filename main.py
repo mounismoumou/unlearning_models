@@ -49,7 +49,7 @@ _OUTPUT_DIR = flags.DEFINE_string(
 
 _NUM_MODELS = flags.DEFINE_integer(
     'num_models',
-    5,
+    512,
     'Number of models to train.',
 )
 
