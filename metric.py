@@ -282,7 +282,7 @@ def _get_epsilons(pos_confs, neg_confs, delta):
     # kept_thresholds = thresholds_flat[keep_inds]
     kept_thresholds = [thresholds_flat[ind] for ind in keep_inds]
 
-    assert thr_eps, "Something went wrong, all thresholds gave nan epsilon..."
+    assert thr_eps.size > 0 and not np.isnan(thr_eps).all(), "Something went wrong, all thresholds gave nan epsilon..."
     thr_eps = np.array(thr_eps)
     epsilons.append(np.nanmax(thr_eps))
     # Get the best threshold via something like 'arg-nan-max': set nans to zeros
