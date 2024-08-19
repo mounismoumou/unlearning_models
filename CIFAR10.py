@@ -6,6 +6,7 @@ import torch
 from torch.utils import data
 import torchvision.transforms as T
 import torchvision.datasets as datasets
+from absl import logging
 
 
 class CIFAR10Dataset(data.Dataset):

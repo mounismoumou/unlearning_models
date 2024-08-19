@@ -49,7 +49,7 @@ _OUTPUT_DIR = flags.DEFINE_string(
 
 _NUM_MODELS = flags.DEFINE_integer(
     'num_models',
-    512,
+    2,
     'Number of models to train.',
 )
 
@@ -65,7 +65,7 @@ def do_unlearning(
     val_loader,
     class_weights,
     original_model,
-    print_accuracy=False,
+    print_accuracy=True,
 ):
   """Run simple unlearning by finetuning."""
   del class_weights
