@@ -41,7 +41,7 @@ def compute_logit_scaled_confidence(logits, targets):
   logits -= np.max(logits, axis=1, keepdims=True)
 
   # Apply the softmax.
-  probs = np.array(np.exp(logits), dtype=np.float64)
+  probs = np.array(np.exp(logits), dtype=np.float32)
   probs /= np.sum(probs, axis=1, keepdims=True)
 
   # For each example, get the confidence of the correct class.
@@ -107,8 +107,8 @@ def _get_double_threshold_rates(pos_confs_, neg_confs_):
   pos_confs_ = torch.tile(pos_confs_[:, None], (1, total_num_thresholds))
   neg_confs_ = torch.tile(neg_confs_[:, None], (1, total_num_thresholds))
 
-  thr_right_ = torch.from_numpy(thr_right_).cuda()
-  thr_left_ = torch.from_numpy(thr_left_).cuda()
+  thr_right_ = torch.from_numpy(thr_right_).float().to('mps')
+  thr_left_ = torch.from_numpy(thr_left_).float().to('mps')
 
   # Predicted positives (pp) / predicted negatives (pn):
   def _is_pp(c):
@@ -143,7 +143,7 @@ def _get_single_threshold_rates(pos_confs_, neg_confs_):
   )
   thresholds_ = torch.linspace(min_val, max_val, num_thresholds)
   thresholds_flat = list(thresholds_.detach().cpu().numpy())
-  thresholds_ = thresholds_.cuda()
+  thresholds_ = thresholds_.float().to('mps')
 
   # thresholds_ is [num_thresholds] and pos_confs/neg_confs is [num models]
   # make them all into [num models, num_thresholds]
@@ -199,8 +199,8 @@ def _get_epsilons(pos_confs, neg_confs, delta):
       best_thresh_idx.append(-1)
       continue
 
-    pos_confs_ = torch.from_numpy(pos_confs_).cuda()
-    neg_confs_ = torch.from_numpy(neg_confs_).cuda()
+    pos_confs_ = torch.from_numpy(pos_confs_).float().to('mps')
+    neg_confs_ = torch.from_numpy(neg_confs_).float().to('mps')
 
     # Compute the tpr / fnr / fpr / tnr using two different decision rules.
     tpr_d, fnr_d, fpr_d, tnr_d, tf_d = _get_double_threshold_rates(
@@ -218,19 +218,19 @@ def _get_epsilons(pos_confs, neg_confs, delta):
     thresholds_flat = tf_d + tf_s
 
     total_num_thresholds = tpr.shape[0]
-    thr_eps = torch.zeros(total_num_thresholds).cuda()
+    thr_eps = torch.zeros(total_num_thresholds).float().to('mps')
 
     # Handle the special case of perfect separation (fpr = fnr = 0).
     # If the sum fpr + fnr is zero, it means both are 0 (since both are >=0).
     fpr_fnr_both_zero = torch.eq(
-        fpr + fnr, torch.zeros(total_num_thresholds).cuda()
+        fpr + fnr, torch.zeros(total_num_thresholds).float().to('mps')
     )
     tpr_tnr_both_ones = torch.eq(
-        tpr + tnr, 2 * torch.ones(total_num_thresholds).cuda()
+        tpr + tnr, 2 * torch.ones(total_num_thresholds).float().to('mps')
     )
     thr_eps = torch.where(
         fpr_fnr_both_zero * tpr_tnr_both_ones,
-        torch.full(thr_eps.shape, np.inf).cuda(),
+        torch.full(thr_eps.shape, np.inf).float().to('mps'),
         thr_eps,
     )
 
@@ -239,17 +239,17 @@ def _get_epsilons(pos_confs, neg_confs, delta):
     # exclude cases where both fpr = fnr = 0 because the code in the above lines
     # would have set those entires of `thr_eps` to inf. This is based on the
     # hypothesis that that's an indication of insufficient samples.
-    thr_eps_is_zero = torch.eq(thr_eps, torch.zeros_like(thr_eps).cuda())
-    fpr_or_fnr_is_zero = torch.eq(fpr * fnr, torch.zeros_like(thr_eps).cuda())
+    thr_eps_is_zero = torch.eq(thr_eps, torch.zeros_like(thr_eps).float().to('mps'))
+    fpr_or_fnr_is_zero = torch.eq(fpr * fnr, torch.zeros_like(thr_eps).float().to('mps'))
     thr_eps = torch.where(
         thr_eps_is_zero * fpr_or_fnr_is_zero,
-        torch.full(thr_eps.shape, np.nan).cuda(),
+        torch.full(thr_eps.shape, np.nan).float().to('mps'),
         thr_eps,
     )
 
     # For the surviving thresholds (epsilon not nan nor inf), compute epsilon:
     thr_eps = torch.where(
-        torch.eq(thr_eps, torch.zeros_like(thr_eps).cuda()),
+        torch.eq(thr_eps, torch.zeros_like(thr_eps).float().to('mps')),
         torch.from_numpy(
             np.clip(
                 np.nanmax(
@@ -264,7 +264,7 @@ def _get_epsilons(pos_confs, neg_confs, delta):
                 0,
                 None,
             )
-        ).cuda(),
+        ).float().to('mps'),
         thr_eps,
     )
 
